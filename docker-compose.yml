@@ -1,0 +1,45 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: notesapp_db
+    environment:
+      POSTGRES_DB: notesapp
+      POSTGRES_USER: notesuser
+      POSTGRES_PASSWORD: notespassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    image: notesapp_backend:latest
+    container_name: notesapp_backend
+    environment:
+      DB_NAME: notesapp
+      DB_USER: notesuser
+      DB_PWD: notespassword
+      DB_HOST: db
+      DB_PORT: 5432
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+
+  frontend:
+    build: ./frontend
+    image: notesapp_frontend:latest
+    container_name: notesapp_frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
